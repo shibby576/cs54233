@@ -1,4 +1,0 @@
-zodb
-flask
-ecdsa
-matplotlib
