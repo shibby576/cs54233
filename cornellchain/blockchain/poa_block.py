@@ -49,16 +49,23 @@ class PoABlock(Block):
         # make sure to check that output is valid seal with provided code
         # (if seal is invalid, repeat)
 
-        # Use NIST192p curve and ECDSA, encoding block header as UTF-8
- #       head=self.header().encode('utf-8')
-        key = self.get_private_key()
-        key=int.from_bytes(key, byteorder='big')
-       
-        seal = self.set_seal_data(key)
-        print(key)
-        while seal.seal_is_valid() is False:
+
+        # Use NIST192p curve and ECDSA, encoding block header as UTF-8, not sure where to use this
+        
+        #try different keys until valid
+        while self.seal_is_valid() is False:
+            #get the private key
             key = self.get_private_key()
-            key = int(key)
+            pk =SigningKey.from_string(self.get_private_key())
+            head=pk.sign(self.unsealed_header().encode('utf-8'))
+            #convert priovate key to int
+            key=int.from_bytes(head,byteorder='big')
+
+
+            #get the seal data with the private key
+            seal = self.set_seal_data(key)
+   
+
 
         
         return
