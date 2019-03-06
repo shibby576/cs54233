@@ -137,6 +137,7 @@ class Block(ABC, persistent.Persistent):
         # (checks that apply only to non-genesis blocks)
             # Check that parent exists (you may find chain.blocks helpful) [test_nonexistent_parent]
             # On failure: return False, "Nonexistent parent"
+            
         if self.is_genesis is False:
             if self.parent_hash not in chain.blocks: 
                 return False, "Nonexistent parent"
@@ -171,40 +172,59 @@ class Block(ABC, persistent.Persistent):
                 # (or twice in this block; you will have to check this manually) [test_double_tx_inclusion_same_block]
                 # (you may find chain.get_chain_ending_with (list of all blocks in the chain between desired block and genesis.) and chain.blocks_containing_tx (Maps transaction hashes to all blocks in the DB that spent them as list of their hashes.) and util.nonempty_intersection useful(turns true iff two lists have a nonempty intersection.))
                 # On failure: return False, "Double transaction inclusion"
+            l=[]
+            output=[]
+            for tx in self.transactions: #have a trans from the block
+                l.append(tx)
+                if tx.hash in chain.blocks_containing_tx:
+                    return False, "Double transaction inclusion"
 
-            #trans included in two blocks on same chain
-            c=[]
-            b=[]
-            l=chain.get_chain_ending_with(self)
- 
-            for i in l:
-                for x in chain.blocks[i].transactions:
-                    c.append(x)
-
-            for i in self.transactions:
-                b.append(i)
-                
-            if nonempty_intersection(c,b) is True:
-                return False, "Double transaction inclusion"
-            
-            
-                
-
-
+                if len(l) != len(set(l)):
+                    return False, "Double transaction inclusion"
+                                             
                 # for every input ref in the tx
-                    # (you may find the string split method for parsing the input into its components)
+                for input_ref in tx.input_refs:
 
+                    # (you may find the string split method for parsing the input into its components)
+                    inputs = input_ref.split(':')
+                    h = inputs[0]
+                    out = inputs[1]
+                    output.append(out)
+                    #print(inputs)
+                    
                     # each input_ref is valid (aka corresponding transaction can be looked up in its holding transaction) [test_failed_input_lookup]
                     # (you may find chain.all_transactions useful here)
                     # On failure: return False, "Required output not found"
+                    
+                    #print(inputs)
+                    #print(chain.all_transactions)
+    #STUMP
+                    if not h in chain.all_transactions:
+                        return False, "Required output not found"
 
                     # every input was sent to the same user (would normally carry a signature from this user; we leave this out for simplicity) [test_user_consistency]
                     # On failure: return False, "User inconsistencies"
+                    
+     #STUMP                   
+    
+                    if len(set(output)) >1:
+    
+                        return False, "User inconsistencies"
+                    
 
                     # no input_ref has been spent in a previous block on this chain [test_doublespent_input_same_chain]
                     # (or in this block; you will have to check this manually) [test_doublespent_input_same_block]
                     # (you may find nonempty_intersection and chain.blocks_spending_input helpful here)
                     # On failure: return False, "Double-spent input"
+
+                    #print (chain.blocks_spending_input)
+                    #if h in chain.blocks_spending_input:
+                    if input_ref in chain.blocks_spending_input:
+                        return False, "Double transaction inclusion"
+
+                    #if len(l) != len(set(l)):
+#                        return False, "Double transaction inclusion"
+
 
                     # each input_ref points to a transaction on the same blockchain as this block [test_input_txs_on_chain]
                     # (or in this block; you will have to check this manually) [test_input_txs_in_block]

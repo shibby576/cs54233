@@ -91,10 +91,12 @@ class Blockchain(persistent.Persistent):
         # (hint): you may find the is_genesis flag helpful in this method
         # as well as the self.blocks data structure
         
+        
         l=[]
-
         if len(self.blocks) != 0:
+            
             if block_hash in self.blocks:
+                
                 while self.blocks[block_hash].is_genesis is False:
                     l.append(block_hash)
                     block_hash = self.blocks[block_hash].parent_hash
