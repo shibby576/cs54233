@@ -42,31 +42,24 @@ class PoABlock(Block):
         """ PoA signer; seals a block with new seal data by signing it, checking that
             signature is valid, and returning.
         """
-
-        # Use NIST192p curve and ECDSA, encoding block header as UTF-8
-        # use self.get_private_key() for key
-        # encode result as int and set using set_seal_data
-        # make sure to check that output is valid seal with provided code
-        # (if seal is invalid, repeat)
-
-
-        # Use NIST192p curve and ECDSA, encoding block header as UTF-8, not sure where to use this
         
-        #try different keys until valid
+        #Check that the seal is not valid, else just return
         while self.seal_is_valid() is False:
+
             #get the private key
-            key = self.get_private_key()
-            pk =SigningKey.from_string(self.get_private_key())
+            private_key = self.get_private_key()
+
+            #create signing key with private key
+            pk =SigningKey.from_string(private_key)
+
+            #sign the header with private key
             head=pk.sign(self.unsealed_header().encode('utf-8'))
-            #convert priovate key to int
-            key=int.from_bytes(head,byteorder='big')
 
-
-            #get the seal data with the private key
-            seal = self.set_seal_data(key)
-   
-
-
+            #convert head to int
+            head_int=int.from_bytes(head,byteorder='big')
+            
+            #Set seal data with the head
+            self.set_seal_data(head_int)
         
         return
 

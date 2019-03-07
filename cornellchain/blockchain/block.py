@@ -104,24 +104,21 @@ class Block(ABC, persistent.Persistent):
         """
 
         chain = blockchain.chain # This object of type Blockchain may be useful
-        
-        # Placeholder for (1a)
 
         # (checks that apply to all blocks)
-        # Check that Merkle root calculation is consistent with transactions in block (use the calculate_merkle_root function) [test_rejects_invalid_merkle]
-        # On failure: return False, "Merkle root failed to match"
-        
+
+        #[test_rejects_invalid_merkle]
+        #Check if the current block's merkle root is the same as the calculated mr
         if self.merkle != self.calculate_merkle_root():
             return False, "Merkle root failed to match"
 
-        # Check that block.hash is correctly calculated [test_rejects_invalid_hash]
-        # On failure: return False, "Hash failed to match"
-        
+        #[test_rejects_invalid_hash]
+        #Check if the current block's hash is the same as the calculated hash of the block
         if self.hash != self.calculate_hash():
             return False, "Hash failed to match"
 
-        # Check that there are at most 900 transactions in the block [test_rejects_too_many_txs]
-        # On failure: return False, "Too many transactions"
+        #[test_rejects_too_many_txs]
+        #Check to see if the current block meets the transaction limit
         if len(self.transactions)>900:
             return False, "Too many transactions"
         
@@ -130,74 +127,86 @@ class Block(ABC, persistent.Persistent):
             # Check that height is 0 and parent_hash is "genesis" [test_invalid_genesis]
             # On failure: return False, "Invalid genesis"
             
+        #[test_invalid_genesis]
+        #Chek if the current block is genesis or not
         if self.is_genesis is True:
+
+            #Make sure that this is a valid genesis block
+            #Check that it is at height 0 and that the parent hash is genesis
             if self.height != 0 or self.parent_hash != "genesis":
                 return False, "Invalid genesis"
 
         # (checks that apply only to non-genesis blocks)
             # Check that parent exists (you may find chain.blocks helpful) [test_nonexistent_parent]
             # On failure: return False, "Nonexistent parent"
-        
+
+        # (checks that apply only to non-genesis blocks)
         if self.is_genesis is False:
-            
+
+            #[test_nonexistent_parent]
+            #Check that the parent block is in the current chain
             if self.parent_hash not in chain.blocks: 
                 return False, "Nonexistent parent"
 
-            # Check that height is correct w.r.t. parent height [test_bad_height]
-            # On failure: return False, "Invalid height"
+            #[test_bad_height]
+            #Check if the space between the current block and parent block is 1
             if (self.height - chain.blocks[self.parent_hash].height) != 1:
                 return False, "Invalid height"
             
-
-            # Check that timestamp is non-decreasing [test_bad_timestamp]
-            # On failure: return False, "Invalid timestamp"
-            
+            #[test_bad_timestamp]
+            #Check that the timestamp on the block and parent block are the same
             if self.timestamp != chain.blocks[self.parent_hash].timestamp:
                 return False, "Invalid timestamp"
             
 
-            # Check that seal is correctly computed and satisfies "target" requirements; use the provided seal_is_valid method [test_bad_seal]
-            # On failure: return False, "Invalid seal"
+            #[test_bad_seal]
+            #Check that the seal is valid
             if not self.seal_is_valid():
                 return False, "Invalid seal"
 
-
-            # Check that all transactions within are valid (use tx.is_valid) [test_malformed_txs]
-            # On failure: return False, "Malformed transaction included"
+            #[test_malformed_txs]
+            #get each transaction in the block
             for i in self.transactions:
+                #Check if the transaction is valid
                 if not i.is_valid():
                     return False, "Malformed transaction included"
 
-            # Check that for every transaction
+            
                 # the transaction has not already been included on a block on the same blockchain as this block [test_double_tx_inclusion_same_chain]
                 # (or twice in this block; you will have to check this manually) [test_double_tx_inclusion_same_block]
                 # (you may find chain.get_chain_ending_with (list of all blocks in the chain between desired block and genesis.) and chain.blocks_containing_tx (Maps transaction hashes to all blocks in the DB that spent them as list of their hashes.) and util.nonempty_intersection useful(turns true iff two lists have a nonempty intersection.))
                 # On failure: return False, "Double transaction inclusion"
+
+            #initiate lists for later checks
             l=[]
             output=[]
-
-            for tx in self.transactions: #have a trans from the block
+            
+            # Check that for every transaction
+            for tx in self.transactions: 
+                #create a list of transactions
                 l.append(tx)
 
                 #[test_double_tx_inclusion_same_chain]
+                #check that the transaction hash is not already presenet in the chain
                 if tx.hash in chain.blocks_containing_tx:
                     return False, "Double transaction inclusion"
 
                 #[test_double_tx_inclusion_same_block]
+                #Check that the transaction doesnt appear twice in the same block
                 if self.transactions.count(tx) != 1:
                     return False, "Double transaction inclusion"
 
 
-                #for money creation test                        
-                in_total = 0                                             
-                # for every input ref in the tx
+                #for money creation test
+                in_total = 0
+                
+                # get the input ref for each tx
                 for input_ref in tx.input_refs:
 
-                    # (you may find the string split method for parsing the input into its components)
+                    # Split the input ref into the hash and transaction position
                     h, pos = input_ref.split(':')
+                    #convert position to int for later use
                     pos = int(pos)
-                    
-                    
                     
                     # each input_ref is valid (aka corresponding transaction can be looked up in its holding transaction) [test_failed_input_lookup]
                     # (you may find chain.all_transactions useful here)
@@ -206,99 +215,124 @@ class Block(ABC, persistent.Persistent):
     
     #RESTRUCTURE
                     #[test_failed_input_lookup]
+                    #Create a list of transaction hashes in the block
                     tx_h = [tx.hash for tx in self.transactions]
-                    
+
+        
+                    #Check if the input ref hash is in the chain                    
                     if h not in chain.all_transactions:
+                        #If input ref hash is not in the chan, check if its in the block
                         if h not in tx_h:
                             return False, "Required output not found"
 
+                    #Check if the input ref hash is in the chain 
                     if h in chain.all_transactions:
-                        input_txn = chain.all_transactions[h]
+                        #create variable with list of transaction from input ref hash
+                        input_tx = chain.all_transactions[h]
 
+                    #Check if the input ref hash is not in the chain 
                     else:
+                        #Get each transaction in the block
                         for input_trans in self.transactions:
+                            #if the input ref hash is equal to the hash of a transaction in the block
                             if h == input_trans.hash:
-                                input_txn = input_trans
+                                #if true, set the input tx var to the transaction from the block and exit
+                                input_tx = input_trans
                                 break
 
-                    
-                    if pos >= len(input_txn.outputs):
+                    #Get the number of outputs in the transaction
+                    output_num = len(input_tx.outputs)
+
+                    #check if the 
+                    if pos >= output_num:
                         return False, "Required output not found"
 
-                    # every input was sent to the same user (would normally carry a signature from this user; we leave this out for simplicity) [test_user_consistency]
-                    # On failure: return False, "User inconsistencies"
                     
-     #RESTRUCTURE                   
+                    #[test_user_consistency]
                     # Get user who received transaction input
-                    rec = input_txn.outputs[pos].receiver
+                    rec = input_tx.outputs[pos].receiver
 
-                    # Get a list of users who sent transaction output
+                    # list of users the sent transaction
                     send= [user.sender for user in tx.outputs]
 
-                    # Validate user who sent transaction output is same user who received transaction input
+                    # Get user in send list
                     for user in send:
+                        #check if user is the reciever
                         if user != rec:
                             return False, "User inconsistencies"
-                    
-
-                    # no input_ref has been spent in a previous block on this chain [test_doublespent_input_same_chain]
-                    # (or in this block; you will have to check this manually) [test_doublespent_input_same_block]
-                    # (you may find nonempty_intersection and chain.blocks_spending_input helpful here)
-                    # On failure: return False, "Double-spent input"
-    #RESTRUCTURE                
-
+                
+                    #[test_doublespent_input_same_chain]
+                    #Check if trans input ref has been spent elsewhere in the chain
                     if input_ref in chain.blocks_spending_input:
+
+                        #get a list of blocks to check
                         blks = chain.get_chain_ending_with(self.parent_hash)
+
+                        #get a list of blocks where the input ref was spent
                         spend = chain.blocks_spending_input[input_ref]
+
+                        #check if the block the input ref was spent on was spent elsewhere on the chain
                         if nonempty_intersection(blks, spend):
                             return False, "Double-spent input"
 
-                    b_inputs = [tx_input_ref for trans in self.transactions for tx_input_ref in trans.input_refs]
+                    #[test_doublespent_input_same_block]
+                    #compile tx inputs on block
+                    b_inputs = []
+                    for trans in self.transactions:
+                        #for each tx in block
+                        for tx_input_ref in trans.input_refs:
+                            #for each inport ref in the tx, add to list
+                            b_inputs.append(tx_input_ref)
 
-                    # Validate transaction input is not already included (spent) on current block
+                    # check if the input was already spent on the block
                     if b_inputs.count(input_ref) != 1:
                         return False, "Double-spent input"
 
-                    # each input_ref points to a transaction on the same blockchain as this block [test_input_txs_on_chain]
-                    # (or in this block; you will have to check this manually) [test_input_txs_in_block]
-                    # (you may find chain.blocks_containing_tx.get and nonempty_intersection as above helpful)
-                    # On failure: return False, "Input transaction not found"
-
-#RESTRUCUTRE
                     #[test_input_txs_on_chain]
                     #check if the transaction is on the current blockchain
+                    print(tx_h)
+                    print('hash ' +h)
                     if h in chain.blocks_containing_tx:
+                        #create list of blocks in question and blocks that contain the input transaction
                         blks = chain.get_chain_ending_with(self.parent_hash)
                         b_w_h = chain.blocks_containing_tx[h]
-                        if not nonempty_intersection(blks, b_w_h):
-                            if input_txn not in tx_h:
-                                return False, "Input transaction not found"
 
+                        #check if the input trans is in both lists
+                        if not nonempty_intersection(blks, b_w_h):
+                            #check if the input transaction is not in the transactions on block
+                            if input_tx not in tx_h:
+                                return False, "Input transaction not found"
+#FIX THIS
                     #[test_input_txs_in_block]
+                    #if the input ref hash is not on the chain, check if its in the current block
+                    
                     elif h not in tx_h:
                         return False, "Input transaction not found"
                         
                     #for money creation test                        
-                    in_total += input_txn.outputs[pos].amount
-
-                # for every output in the tx
-                    # every output was sent from the same user (would normally carry a signature from this user; we leave this out for simplicity)
-                    # (this MUST be the same user as the outputs are locked to above) [test_user_consistency]
-                    # On failure: return False, "User inconsistencies"
-                # the sum of the input values is at least the sum of the output values (no money created out of thin air) [test_no_money_creation]
-                # On failure: return False, "Creating money"
+                    in_total += input_tx.outputs[pos].amount
 
                 #[test_user_consistency]
-                send= [user.sender for user in tx.outputs]
-                if len(set(send)) != 1:
+                #create a list of senders of transaxctions
+                send=[]
+                for user in tx.outputs:
+                    send.append(user.sender)
+
+                #check if there is only one sender
+                if len(set(send)) > 1:
                     return False, "User inconsistencies"
 
                 #[test_no_money_creation]
-        
-                out_total = sum(output.amount for output in tx.outputs)
+                #create a list of transactions to calculate amount
+                out_total=[]
+                for output in tx.outputs:
+                    out_total.append(output.amount)
 
-                # For every transaction, verify the sum of transaction input values is at least the sum of transaction output values
-                if in_total < out_total:
+                #get the total output amount    
+                out_total = sum(out_total)
+                
+                #check if the output value is greater than the input value
+                if in_total<out_total:
                     return False, "Creating money"
 
         return True, "All checks passed"
