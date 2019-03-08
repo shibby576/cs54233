@@ -16,9 +16,9 @@ def sha256_2_string(string_to_hash):
 
     # Placeholder for (1a)
 
-    hashId1 = hashlib.sha256(string_to_hash.encode('utf-8')).digest()
+    hashId1 = hashlib.sha256(string_to_hash.encode()).digest()
     hashId2 = hashlib.sha256(hashId1).hexdigest()
-
+ 
     return hashId2
 
 

@@ -38,18 +38,27 @@ class Block(ABC, persistent.Persistent):
         self.hash = self.calculate_hash() # keep track of hash for caching purposes
 
     def calculate_merkle_root(self):
-        """ Gets the Merkle root hash for a given list of transactions.
+        hash_trans = [sha256_2_string(str(x)) for x in self.transactions]
 
-        This method is incomplete!  Right now, it only hashes the
-        transactions together, which does not enable the same type
-        of lite client support a true Merkle hash would.
+        if len(hash_trans) == 0:
+            hash_trans = sha256_2_string("")
 
-        Returns:
-            str: Merkle hash of the list of transactions in a block, uniquely identifying the list.
-        """
-        # Placeholder for (1c)
-        all_txs_as_string = "".join([str(x) for x in self.transactions])
-        return sha256_2_string(all_txs_as_string)
+        while len(hash_trans) > 1:
+        	
+        	i=0
+        	hash_trans_nex = []
+
+        	while i < len(hash_trans):
+        		if i ==  len(hash_trans) - 1:
+        			hash_trans_nex.append((hash_trans[i]))
+        		
+        		else:
+        			hash_trans_nex.append(sha256_2_string(hash_trans[i] + hash_trans[i + 1]))
+        			i += 1
+        		i += 1
+        	hash_trans = hash_trans_nex
+
+        return hash_trans[0]
 
     def unsealed_header(self):
         """ Computes the header string of a block (the component that is sealed by mining).
@@ -207,13 +216,7 @@ class Block(ABC, persistent.Persistent):
                     h, pos = input_ref.split(':')
                     #convert position to int for later use
                     pos = int(pos)
-                    
-                    # each input_ref is valid (aka corresponding transaction can be looked up in its holding transaction) [test_failed_input_lookup]
-                    # (you may find chain.all_transactions useful here)
-                    # On failure: return False, "Required output not found"
-                    
-    
-    #RESTRUCTURE
+        
                     #[test_failed_input_lookup]
                     #Create a list of transaction hashes in the block
                     tx_h = [tx.hash for tx in self.transactions]
@@ -290,8 +293,7 @@ class Block(ABC, persistent.Persistent):
 
                     #[test_input_txs_on_chain]
                     #check if the transaction is on the current blockchain
-                    print(tx_h)
-                    print('hash ' +h)
+
                     if h in chain.blocks_containing_tx:
                         #create list of blocks in question and blocks that contain the input transaction
                         blks = chain.get_chain_ending_with(self.parent_hash)
@@ -300,14 +302,17 @@ class Block(ABC, persistent.Persistent):
                         #check if the input trans is in both lists
                         if not nonempty_intersection(blks, b_w_h):
                             #check if the input transaction is not in the transactions on block
-                            if input_tx not in tx_h:
+                            if h not in tx_h:
                                 return False, "Input transaction not found"
 #FIX THIS
                     #[test_input_txs_in_block]
                     #if the input ref hash is not on the chain, check if its in the current block
                     
-                    elif h not in tx_h:
+                    elif h in tx_h:
+                        break
+                    else:
                         return False, "Input transaction not found"
+                    
                         
                     #for money creation test                        
                     in_total += input_tx.outputs[pos].amount
