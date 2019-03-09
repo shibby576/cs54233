@@ -133,8 +133,6 @@ class Block(ABC, persistent.Persistent):
         
 
         # (checks that apply to genesis block)
-            # Check that height is 0 and parent_hash is "genesis" [test_invalid_genesis]
-            # On failure: return False, "Invalid genesis"
             
         #[test_invalid_genesis]
         #Chek if the current block is genesis or not
@@ -179,12 +177,6 @@ class Block(ABC, persistent.Persistent):
                 #Check if the transaction is valid
                 if not i.is_valid():
                     return False, "Malformed transaction included"
-
-            
-                # the transaction has not already been included on a block on the same blockchain as this block [test_double_tx_inclusion_same_chain]
-                # (or twice in this block; you will have to check this manually) [test_double_tx_inclusion_same_block]
-                # (you may find chain.get_chain_ending_with (list of all blocks in the chain between desired block and genesis.) and chain.blocks_containing_tx (Maps transaction hashes to all blocks in the DB that spent them as list of their hashes.) and util.nonempty_intersection useful(turns true iff two lists have a nonempty intersection.))
-                # On failure: return False, "Double transaction inclusion"
 
             #initiate lists for later checks
             l=[]
